@@ -36,7 +36,7 @@ This is a broker site backend built with Express.js, MongoDB, and AWS S3. The ap
 
 1. Clone the repository:
    ```bash
-   git clone [<repository-url>](https://github.com/<your-github-username>/trustscalp-backend.git)
+   git clone https://github.com/your-github-username/trustscalp-backend.git
    cd broker-site
    ```
    > PLEASE fork before cloning
