@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a broker site backend built with Express.js, MongoDB, and AWS S3. The application allows users to manage their accounts, submit support tickets with attachments, and utilize various features necessary for a broker platform. More features added ....
+This is a broker site backend built with Express.js, MongoDB, and AWS S3. The application allows users to manage their accounts, submit support tickets with attachments, and utilize various features necessary for a broker platform. More features to be added ....
 
 ## Features
 
@@ -36,7 +36,7 @@ This is a broker site backend built with Express.js, MongoDB, and AWS S3. The ap
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone [<repository-url>](https://github.com/<your-github-username>/trustscalp-backend.git)
    cd broker-site
    ```
    > PLEASE fork before cloning
@@ -63,7 +63,7 @@ To start the server, run the following command:
 npm start
 ```
 
-The server will run on `http://localhost:3000`.
+The server will run on `http://localhost:3000` || `http://localhost:<your-PORT>`.
 
 ### API Endpoints
 
@@ -73,7 +73,8 @@ The server will run on `http://localhost:3000`.
 - **Update Password**: `PUT /api/users/password`
 - **Submit Support Ticket**: `POST /api/support/ticket`
 - **Create Beneficiary**: `POST /api/users/beneficiary`
-- **Enable 2-Factor Authentication**: `POST /api/auth/2fa`
+- **Generate 2-Factor Authentication**: `POST /api/2fa/generate`
+- **Verify 2-Factor Authentication**: `POST /api/2fa/verify`
 
 ### File Uploads
 
