@@ -1,4 +1,4 @@
-const User = require('../models/beneficiary.models');
+const User = require('../models/user.models');
 const bcrypt = require('bcryptjs');
 
 const updatePassword = async (req, res) => {

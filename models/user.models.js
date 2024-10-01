@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
     isActive: { type: Boolean, default: true },
     role: { type: String},
     zip: { type: String },
+    twoFactorSecret: { type: String },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });
