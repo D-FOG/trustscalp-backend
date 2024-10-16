@@ -33,6 +33,10 @@ io.on('connection', (socket) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.send('Welcome to the server! This is the trustscalp backend.');
+});
+
 app.use('/api', auth);
 app.use('/api/admin', adminRoutes);
 
