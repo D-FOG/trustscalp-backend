@@ -8,7 +8,12 @@ const multer = require('multer');
 // Set up multer storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // You can specify your local temp folder here
+        const uploadPath = 'uploads/';
+        // Check if the uploads directory exists, and create it if not
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath); // Save files to the uploads directory
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname)); // File name saved locally
@@ -49,7 +54,7 @@ const uploadFileToS3 = (file) => {
         Key: `uploads/${Date.now()}-${path.basename(file.originalname)}`, // S3 file name
         Body: fileStream,
         ContentType: file.mimetype,
-        ACL: 'public-read' // Make it publicly readable if needed
+        //ACL: 'public-read' // Make it publicly readable if needed
     };
 
     return s3.upload(params).promise(); // Return a promise

@@ -2,7 +2,7 @@ const User = require('../models/user.models');
 const bcrypt = require('bcryptjs');
 
 const updatePassword = async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
 
     try {
         const userId = req.user; // User ID from the authenticated token
@@ -14,7 +14,7 @@ const updatePassword = async (req, res) => {
         }
 
         // Check if the old password matches the current one
-        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Incorrect current password' });
         }

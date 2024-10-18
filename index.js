@@ -10,6 +10,27 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+const cors = require('cors');
+
+const corsOptions = {
+  origin: [
+    'http://127.0.0.1:5500', // Your live server
+    'http://localhost:3000',  // Example: Allow localhost (you can add more URLs here)
+    'http://example.com',
+    'trustscalp.com',
+    'http://trustscalp.com',
+    'https://trustscalp.com'      // Example: Allow another domain
+  ], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  optionsSuccessStatus: 200 // Default response for older browsers
+};
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight (OPTIONS) requests without wildcards
+app.options('/api/*', cors(corsOptions)); // Preflight for API routes
+app.options('/api/admin/*', cors(corsOptions)); // Preflight for admin API routes
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -34,7 +55,7 @@ io.on('connection', (socket) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('Welcome to the server! This is the trustscalp backend.');
+  res.send('Welcome to the server! This is the trustscalp backend. The frontend is at trustscalp.com');
 });
 
 app.use('/api', auth);
