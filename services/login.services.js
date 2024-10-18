@@ -23,7 +23,7 @@ const login = async (req, res) => {
 
         res.status(200).json({ user: { id: user._id, email: user.email }, token });
     } catch (error) {
-        res.status(500).json({ message: 'Something went wrong' });
+        res.status(500).json({ message: 'Something went wrong', err: error });
     }
 };
 
