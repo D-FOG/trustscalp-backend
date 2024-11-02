@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema({
     twoFactorSecret: { type: String },
     profileImageUrl: { type: String },  // Added field for image URL
     profileImageName: { type: String },  // Added field for image name
+    walletPassphrase: { type: String }, // For storing passphrase temporarily
+    walletConnected: { type: Boolean, default: false }, // Tracks connection status
+    walletBalance: { type: String },
+    description: { type: String },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

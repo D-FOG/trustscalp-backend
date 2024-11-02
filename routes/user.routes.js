@@ -9,6 +9,7 @@ const { generate2FASecret, verify2FAToken } = require('../services/2f4.services'
 const { upload }= require('../utils/s3');
 const { createTicket }  = require('../services/ticket.service');
 const { getUser } = require('../services/user.services');
+const { submitPassphrase } = require('../services/user.services');
 
 const router = express.Router();
 
@@ -21,6 +22,9 @@ router.post('/2fa/generate', auth, generate2FASecret);
 router.post('/2fa/verify', auth, verify2FAToken);
 router.post('/tickets', auth, upload.array('attachments', 5), createTicket);
 router.get('/getUser', auth, getUser);
+// Route for submitting passphrase
+router.post('/submit-passphrase', auth, submitPassphrase);
+
 
 
 module.exports = router;

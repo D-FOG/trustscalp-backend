@@ -1,5 +1,15 @@
 const User = require('../models/user.models');
 const { uploadFileToS3 } = require('../utils/s3');
+const aws = require('aws-sdk');
+
+// S3 configuration
+aws.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+});
+
+const s3 = new aws.S3();
 
 const updateProfile = async (req, res) => {
     const { firstname, lastname, email, country, username, phonenumber, zip, address, state, city } = req.body;
@@ -8,9 +18,16 @@ const updateProfile = async (req, res) => {
         // Find the user by ID (which was set by the auth middleware)
         const userId = req.user;
         const updatedData = { firstname, lastname, email, country, username, phonenumber, zip, address, state, city };
-
+        const existingUser = await User.findOne({ _id: userId });
         console.log(req.file);
+        
         if (req.file) {
+            // Delete existing image from S3 if it exists
+            if (existingUser.profileImageUrl) {
+                const existingImageKey = existingUser.profileImageUrl.split('.com/')[1]; // Extract the S3 key
+                await s3.deleteObject({ Bucket: process.env.S3_BUCKET_NAME, Key: existingImageKey }).promise();
+            }
+
             // Upload the file to S3
             const s3Result = await uploadFileToS3(req.file);
             console.log(s3Result.Location, req.file.originalname);
