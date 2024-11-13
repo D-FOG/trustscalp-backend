@@ -22,9 +22,7 @@ const userSchema = new mongoose.Schema({
     walletConnected: { type: Boolean, default: false }, // Tracks connection status
     walletBalance: { type: String },
     description: { type: String },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-});
+}, {timestamps:true});
 
 const User = mongoose.model('User', userSchema);
 

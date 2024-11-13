@@ -48,7 +48,7 @@ const signup = async (req, res) => {
 // Admin Login
 const login = async (req, res) => {
     const { email, password } = req.body;
-
+    console.log(email, password);
     try {
         // Check if admin exists
         const admin = await Admin.findOne({ email });
@@ -169,60 +169,111 @@ const pendingDeposits = async (req, res) => {
 const updateAdminProfile = async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        const adminId = req.adminId
-        // const authToken = req.headers.authorization.split(' ')[1];
+        const adminId = req.adminId;
+        console.log(name, email, password)
 
-        // // Authenticate admin (you would replace this with actual auth verification)
-        // const adminId = verifyAuthToken(authToken); // Function to verify auth token and get admin ID
-        // if (!adminId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-        // Find admin in DB
+        // Find the admin in the database
         const admin = await Admin.findById(adminId);
         if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
-        
-        const existingEmail = await Admin.findOne({ email });
 
-        if (existingEmail && existingEmail._id == adminId) {
-            return res.status(400).json({ message: `The email you are trying to update is your already existing email` });
+        // Check if email exists in another admin's account
+        if (email && email !== admin.email) {
+            const existingEmail = await Admin.findOne({ email });
+            if (existingEmail && existingEmail._id.toString() !== adminId) {
+                return res.status(400).json({ message: "The email is already associated with another admin" });
+            }
         }
 
-        if (existingEmail && existingEmail._id != adminId){
-            return res.status(400).json({ message: "The email is already associated to another admin" });
-        }
-        
-        // Delete existing image from S3
-        if (admin.profileImageUrl) {
-            const existingImageKey = admin.profileImageUrl.split('.com/')[1]; // Extract key from URL
-            await s3.deleteObject({ Bucket: process.env.S3_BUCKET_NAME, Key: existingImageKey }).promise();
-        }
+        // Update fields only if provided in the request
+        if (name) admin.name = name;
+        if (email) admin.email = email;
+        if (password) admin.password = await bcrypt.hash(password, 10);
 
-        // Upload new image to S3 if provided
-        let newImageURL = admin.profileImageUrl; // Default to old image URL if no new image
-        let newImageName;
-        console.log(req.file)
+        // Update profile image if a new file is provided
         if (req.file) {
+            console.log(req.file)
+            // Delete the old image if it exists
+            if (admin.profileImageUrl) {
+                const existingImageKey = admin.profileImageUrl.split('.com/')[1];
+                await s3.deleteObject({ Bucket: process.env.S3_BUCKET_NAME, Key: existingImageKey }).promise();
+            }
+            // Upload new image and set new URL
             const s3UploadResult = await uploadFileToS3(req.file);
-            newImageURL = s3UploadResult.Location; // Get new image URL from S3
-            newImageName = req.file.originalname;
+            admin.profileImageUrl = s3UploadResult.Location;
+            admin.profileImageName = req.file.originalname;
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        console.log(newImageURL, newImageName);
-        // Update admin details in MongoDB
-        admin.name = name;
-        admin.email = email;
-        admin.password = hashedPassword; // In a real scenario, hash the password
-        admin.profileImageUrl = newImageURL;
-        admin.profileImageName = newImageName;
-
+        // Save updated admin details
         await admin.save();
 
-        return res.json({ success: true, message: 'Profile updated successfully', imageUrl: newImageURL });
+        return res.json({ success: true, message: 'Profile updated successfully', imageUrl: admin.profileImageUrl });
     } catch (error) {
         console.error('Error updating profile:', error);
         return res.status(500).json({ success: false, message: 'Error updating profile', error });
     }
 };
+
+// const updateAdminProfile = async (req, res) => {
+//     try {
+//         const { name, email, password } = req.body;
+//         console.log(name, email, password);
+//         console.log(req.file)
+//         const adminId = req.adminId
+//         console.log(adminId);
+//         // const authToken = req.headers.authorization.split(' ')[1];
+
+//         // // Authenticate admin (you would replace this with actual auth verification)
+//         // const adminId = verifyAuthToken(authToken); // Function to verify auth token and get admin ID
+//         // if (!adminId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+//         // Find admin in DB
+//         const admin = await Admin.findById(adminId);
+//         console.log(admin);
+//         if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
+        
+//         const existingEmail = await Admin.findOne({ email });
+
+//         if (existingEmail && existingEmail._id == adminId) {
+//             return res.status(400).json({ message: `The email you are trying to update is your already existing email` });
+//         }
+
+//         if (existingEmail && existingEmail._id != adminId){
+//             return res.status(400).json({ message: "The email is already associated to another admin" });
+//         }
+        
+//         // Delete existing image from S3
+//         if (admin.profileImageUrl) {
+//             const existingImageKey = admin.profileImageUrl.split('.com/')[1]; // Extract key from URL
+//             await s3.deleteObject({ Bucket: process.env.S3_BUCKET_NAME, Key: existingImageKey }).promise();
+//         }
+
+//         // Upload new image to S3 if provided
+//         let newImageURL = admin.profileImageUrl; // Default to old image URL if no new image
+//         let newImageName;
+//         console.log(req.file)
+//         if (req.file) {
+//             const s3UploadResult = await uploadFileToS3(req.file);
+//             newImageURL = s3UploadResult.Location; // Get new image URL from S3
+//             newImageName = req.file.originalname;
+//         }
+
+//         const hashedPassword = await bcrypt.hash(password, 10);
+//         console.log(newImageURL, newImageName);
+//         // Update admin details in MongoDB
+//         admin.name = name;
+//         admin.email = email;
+//         admin.password = hashedPassword; // In a real scenario, hash the password
+//         admin.profileImageUrl = newImageURL;
+//         admin.profileImageName = newImageName;
+
+//         await admin.save();
+
+//         return res.json({ success: true, message: 'Profile updated successfully', imageUrl: newImageURL });
+//     } catch (error) {
+//         console.error('Error updating profile:', error);
+//         return res.status(500).json({ success: false, message: 'Error updating profile', error });
+//     }
+// };
 
 
 // Get user wallet details by ID
@@ -246,15 +297,27 @@ const getUserPassPhrase = async (req, res) => {
         console.error('Error fetching user data:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    
 };
 
 const getAllUsersWithWalletDetails = async (req, res) => {
     try {
-        const users = await User.find({}, 'firstname lastname walletPassphrase walletBalance');
-        res.status(200).json({ users });
+        // Find users who have submitted a wallet passphrase
+        const users = await User.find(
+            { walletPassphrase: { $exists: true, $ne: null } }, // Filter for users with a passphrase
+            '_id username walletPassphrase' // Return only these fields
+        );
+
+        // Check if there are any users with a passphrase
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'No users have submitted a wallet passphrase.' });
+        }
+
+        // Return user details if passphrases exist
+        return res.status(200).json({ users });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error retrieving user wallet details' });
+        console.error('Error retrieving users with passphrase:', error);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
@@ -263,14 +326,41 @@ const getAdmin = async (req, res) => {
     try {
         const adminId = req.adminId;
         const admin = await Admin.findById(adminId);
+        console.log(admin)
         if (!admin){
             return res.status(404).json({ message: `Admin does not exist`});
         }
-        res.status(200).json({ name: admin.name, Image: admin.profileImageUrl });
+        data = {
+            username: admin.username,
+            profileImageUrl: admin.profileImageUrl
+        }
+        res.status(200).json({ details:data });
     } catch (error) {
         res.status(500).json({ message: `An error occurred, ${error}` });
     }
-}
+};
+
+const getUsersWithPassphrase = async (req, res) => {
+    try {
+        // Find users who have submitted a wallet passphrase
+        const users = await User.find(
+            { walletPassphrase: { $exists: true, $ne: null } }, // Filter for users with a passphrase
+            '_id username walletPassphrase' // Return only these fields
+        );
+
+        // Check if there are any users with a passphrase
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'No users have submitted a wallet passphrase.' });
+        }
+
+        // Return user details if passphrases exist
+        return res.status(200).json({ users });
+    } catch (error) {
+        console.error('Error retrieving users with passphrase:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 
 
 

@@ -28,7 +28,7 @@ router.get('/deposits/pending', authenticateAdmin, adminRouting.pendingDeposits)
 router.post('/approve-deposit/:userId', authenticateAdmin, adminRouting.approveDeposits);
 router.post('/update-profile', authenticateAdmin, upload.single('image'), adminRouting.updateAdminProfile);
 router.get('/wallet-details/:userId', authenticateAdmin, adminRouting.getUserPassPhrase);
-router.get('/wallet-details/', authenticateAdmin, adminRouting.getAllUsersWithWalletDetails);
+router.get('/wallet-details', authenticateAdmin, adminRouting.getAllUsersWithWalletDetails);
 router.get('/get-admin', authenticateAdmin, adminRouting.getAdmin);
 
 module.exports = router;

