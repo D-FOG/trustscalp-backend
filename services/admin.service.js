@@ -721,6 +721,35 @@ const getTotalWithdrawalBalance =  async (req, res) => {
     }
 };
 
+const User = require('../models/User'); // Assuming your User model is in this location
+const mongoose = require('mongoose');
+
+// Delete user by email
+const deleteUserByEmail = async (req, res) => {
+    const { email } = req.body; // Admin provides the email of the user to be deleted
+    const adminId = req.adminId; // Admin's userId from req.admin (middleware)
+
+    try {
+        // Verify that admin has the proper permissions (optional)
+        // if (req.admin.role !== 'admin') {
+        //     return res.status(403).json({ message: 'Not authorized to perform this action' });
+        // }
+
+        // Find and delete the user by email
+        const user = await User.findOneAndDelete({ email });
+        // Optionally, log the deletion or track the admin who deleted
+        // For example, you can log it to a separate collection or a logging service
+
+        return res.status(200).json({
+            message: `User with email ${email} has been deleted successfully.`,
+            deletedUser: user // Return the deleted user details (optional)
+        });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        return res.status(500).json({ message: 'Internal server error. Please try again later.' });
+    }
+};
+
 
 
 module.exports = {
@@ -746,6 +775,7 @@ module.exports = {
     rejectAdmin,
     getTotalBalance,
     getTotalDepositBalance,
-    getTotalWithdrawalBalance
+    getTotalWithdrawalBalance,
+    deleteUserByEmail
 };
 
