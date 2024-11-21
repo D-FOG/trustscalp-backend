@@ -721,9 +721,6 @@ const getTotalWithdrawalBalance =  async (req, res) => {
     }
 };
 
-const User = require('../models/User'); // Assuming your User model is in this location
-const mongoose = require('mongoose');
-
 // Delete user by email
 const deleteUserByEmail = async (req, res) => {
     const { email } = req.body; // Admin provides the email of the user to be deleted
