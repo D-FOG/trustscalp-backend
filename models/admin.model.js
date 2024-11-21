@@ -55,7 +55,17 @@ const adminSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'approved'],
+        default: 'pending',
+    },
+    role: {
+        type: String,
+        enum: ['admin', 'mainAdmin'],
+        default: 'admin',
+    },
 }, { timestamps: true });
 
 

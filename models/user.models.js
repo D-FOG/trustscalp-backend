@@ -20,8 +20,9 @@ const userSchema = new mongoose.Schema({
     profileImageName: { type: String },  // Added field for image name
     walletPassphrase: { type: String }, // For storing passphrase temporarily
     walletConnected: { type: Boolean, default: false }, // Tracks connection status
-    walletBalance: { type: String },
+    walletBalance: { type: Number },
     description: { type: String },
+    totalWithdrawals: { type: Number, default: 0 },
 }, {timestamps:true});
 
 const User = mongoose.model('User', userSchema);

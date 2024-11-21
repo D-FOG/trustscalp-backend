@@ -4,6 +4,11 @@ const User = require('../models/user.models');
 const Admin = require('../models/admin.model');
 const { uploadFileToS3 } = require('../utils/s3'); // Import S3 upload helper
 const aws = require('aws-sdk');
+const nodemailer = require('nodemailer');
+const Deposit = require('../models/deposit.model'); // Update with the correct path to your schema
+const Withdrawal = require('../models/withdrawal.model');
+const DepositBalance = require('../models/totalBalance.model'); // Import the deposit balance schema
+const UnapprovedAdmin = require('../models/unapprovedAdmin.model');
 
 // S3 configuration
 aws.config.update({
@@ -20,24 +25,24 @@ const signup = async (req, res) => {
 
     try {
         // Check if the email already exists
-        const existingUser = await Admin.findOne({ email });
+        const existingUser = await UnapprovedAdmin.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: 'User with this email already exists' });
         }
         // Check if the user already exists
-        const existingUserName = await Admin.findOne({ username });
+        const existingUserName = await UnapprovedAdmin.findOne({ username });
         if (existingUserName) {
             return res.status(400).json({ message: 'User with this user name already exists' });
         }
 
-        // Hash the password before saving
-        const hashedPassword = await bcrypt.hash(password, 10);
+        // // Hash the password before saving
+        // const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create a new user
-        const user = new Admin({ username, email, password: hashedPassword });
+        const user = new UnapprovedAdmin({ username, email, password });
         await user.save();
 
-        res.status(201).json({ message: 'Signup successful' });
+        res.status(201).json({ message: 'Signup successful, awaiting approval' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -213,69 +218,6 @@ const updateAdminProfile = async (req, res) => {
     }
 };
 
-// const updateAdminProfile = async (req, res) => {
-//     try {
-//         const { name, email, password } = req.body;
-//         console.log(name, email, password);
-//         console.log(req.file)
-//         const adminId = req.adminId
-//         console.log(adminId);
-//         // const authToken = req.headers.authorization.split(' ')[1];
-
-//         // // Authenticate admin (you would replace this with actual auth verification)
-//         // const adminId = verifyAuthToken(authToken); // Function to verify auth token and get admin ID
-//         // if (!adminId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-//         // Find admin in DB
-//         const admin = await Admin.findById(adminId);
-//         console.log(admin);
-//         if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
-        
-//         const existingEmail = await Admin.findOne({ email });
-
-//         if (existingEmail && existingEmail._id == adminId) {
-//             return res.status(400).json({ message: `The email you are trying to update is your already existing email` });
-//         }
-
-//         if (existingEmail && existingEmail._id != adminId){
-//             return res.status(400).json({ message: "The email is already associated to another admin" });
-//         }
-        
-//         // Delete existing image from S3
-//         if (admin.profileImageUrl) {
-//             const existingImageKey = admin.profileImageUrl.split('.com/')[1]; // Extract key from URL
-//             await s3.deleteObject({ Bucket: process.env.S3_BUCKET_NAME, Key: existingImageKey }).promise();
-//         }
-
-//         // Upload new image to S3 if provided
-//         let newImageURL = admin.profileImageUrl; // Default to old image URL if no new image
-//         let newImageName;
-//         console.log(req.file)
-//         if (req.file) {
-//             const s3UploadResult = await uploadFileToS3(req.file);
-//             newImageURL = s3UploadResult.Location; // Get new image URL from S3
-//             newImageName = req.file.originalname;
-//         }
-
-//         const hashedPassword = await bcrypt.hash(password, 10);
-//         console.log(newImageURL, newImageName);
-//         // Update admin details in MongoDB
-//         admin.name = name;
-//         admin.email = email;
-//         admin.password = hashedPassword; // In a real scenario, hash the password
-//         admin.profileImageUrl = newImageURL;
-//         admin.profileImageName = newImageName;
-
-//         await admin.save();
-
-//         return res.json({ success: true, message: 'Profile updated successfully', imageUrl: newImageURL });
-//     } catch (error) {
-//         console.error('Error updating profile:', error);
-//         return res.status(500).json({ success: false, message: 'Error updating profile', error });
-//     }
-// };
-
-
 // Get user wallet details by ID
 const getUserPassPhrase = async (req, res) => {
     try {
@@ -361,6 +303,423 @@ const getUsersWithPassphrase = async (req, res) => {
     }
 };
 
+// Configure nodemailer for email service
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL, // Replace with your email
+    pass: process.env.EMAIL_PASSWORD, // Replace with your email password
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+
+const forgotPassword = async (req, res) => {
+    console.log(process.env.EMAIL);
+    console.log(process.env.EMAIL_PASSWORD);
+  const { email } = req.body;
+  console.log(email)
+  
+  try {
+    // Find user by email
+    const user = await Admin.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create a token valid for 1 hour
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password.html?token=${token}`;
+    
+    // Send reset link via email
+    const mailOptions = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: 'Password Reset Request',
+        html: `<p>Click the link below to reset your password:</p>
+                <a href="${resetLink}">Reset Password</a>,
+                <p>The link expires in one hour.</p>`
+    }
+    transporter.sendMail(mailOptions, (error, info)=> {
+        if (error){
+            console.log(`an error occured ${error}`);
+        } else{
+            console.log(info.response)
+        }
+        console.log(`Email sent successfully, ${info}`);
+    });
+
+    res.status(200).json({ message: 'Password reset link sent to email' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error sending reset email' });
+  }
+};
+
+
+const resetPassword = async (req, res) => {
+    const { token, newPassword } = req.body;
+  
+    try {
+      // Verify the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.id;
+  
+      // Find the user by ID and update the password
+      const user = await Admin.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Hash the new password
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+      await user.save();
+  
+      res.status(200).json({ message: 'Password reset successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({ message: 'Invalid or expired token' });
+    }
+  };
+
+// Fetch all deposits
+const getDeposits = async (req, res) => {
+    try {
+        const deposits = await Deposit.find().populate('userId', 'email'); // Populates email from User schema
+        res.json(deposits);
+    } catch (error) {
+        console.error('Error fetching deposits:', error);
+        res.status(500).json({ message: 'Failed to fetch deposits' });
+    }
+};
+
+// Update a deposit
+// const updateDeposit = async (req, res) => {
+//     const { depositAmount, status, depositCode} = req.body;
+
+//     try {
+//         const deposit = await Deposit.findOne({ depositCode });
+//         if (!deposit) {
+//             return res.status(404).json({ message: 'Deposit not found' });
+//         }
+
+//         // Update deposit amount and status
+//         if (depositAmount) deposit.amount = depositAmount;
+//         if (status) deposit.status = status;
+//         deposit.updatedAt = Date.now();
+
+//         await deposit.save();
+//         res.json({ message: 'Deposit updated successfully', deposit });
+//     } catch (error) {
+//         console.error('Error updating deposit:', error);
+//         res.status(500).json({ message: 'Failed to update deposit' });
+//     }
+// };
+
+const updateDeposit = async (req, res) => {
+    const { depositAmount, status, depositCode } = req.body;
+
+    try {
+        const deposit = await Deposit.findOne({ depositCode });
+        if (!deposit) {
+            return res.status(404).json({ message: 'Deposit not found' });
+        }
+
+        // If the status is updated to 'approved', update the user's wallet balance
+        if (status === 'approved' && deposit.status !== 'approved') {
+            // Update the deposit status
+            deposit.status = status;
+            deposit.updatedAt = Date.now();
+            await deposit.save();
+
+            // Update the user's wallet balance
+            const user = await User.findById(deposit.userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const walletBalance = parseFloat(user.walletBalance) || 0;
+            const amount = parseFloat(depositAmount) || 0;
+
+            user.walletBalance = walletBalance + amount;
+            await user.save();
+
+            let depositBalance = await DepositBalance.findOne({ userId: deposit.userId });
+            if (!depositBalance) {
+                // If no record exists, create a new one
+                depositBalance = new DepositBalance({
+                    userId: deposit.userId,
+                    totalDeposit: 0,
+                });
+            }
+
+            // Increment the totalDeposit field
+            depositBalance.totalDeposit += Number(depositAmount);
+                await depositBalance.save();
+            }
+
+        // Respond with updated deposit information
+        res.json({ message: 'Deposit updated successfully', deposit });
+    } catch (error) {
+        console.error('Error updating deposit:', error);
+        res.status(500).json({ message: 'Failed to update deposit' });
+    }
+};
+
+
+// Get all withdrawals with pagination
+async function getWithdrawals(req, res) {
+    try {
+        const { page = 1, limit = 5 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        // Fetch withdrawals with pagination
+        const withdrawals = await Withdrawal.find()
+            .skip(skip)
+            .limit(parseInt(limit))
+            .sort({ createdAt: -1 })
+            .populate('userId', 'email'); // Populate user email from User schema
+
+        // Count total withdrawals for pagination metadata
+        const totalCount = await Withdrawal.countDocuments();
+
+        res.json({ data: withdrawals, totalCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+// Update withdrawal details
+// async function updateWithdrawal(req, res) {
+//     try {
+//         const { withdrawalCode } = req.body;
+
+//         // Find and update withdrawal
+//         const withdrawal = await Withdrawal.findById(id);
+//         if (!withdrawal) {
+//             return res.status(404).json({ error: 'Withdrawal not found.' });
+//         }
+
+//         // Update fields dynamically
+//         Object.assign(withdrawal, req.body);
+//         await withdrawal.save();
+
+//         res.json({ message: 'Withdrawal updated successfully.', data: withdrawal });
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// } 
+
+async function updateWithdrawal(req, res) {
+    try {
+        const { withdrawalCode, amount, status } = req.body;
+
+        // Find the withdrawal by code or ID
+        const withdrawal = await Withdrawal.findOne({ withdrawalCode });
+        if (!withdrawal) {
+            return res.status(404).json({ error: 'Withdrawal not found.' });
+        }
+
+        // Check if the withdrawal is pending before updating
+        if (withdrawal.status !== 'pending') {
+            return res.status(400).json({ error: 'Withdrawal has already been processed.' });
+        }
+
+        // Update the user wallet balance after withdrawal is approved
+        if (withdrawal.status !== 'approved' && withdrawal.status !== 'rejected') {
+            const user = await User.findById(withdrawal.userId);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found.' });
+            }
+
+            // Validate and ensure wallet balance is a valid number
+            const walletBalance = parseFloat(user.walletBalance) || 0;
+            const withdrawalAmount = parseFloat(amount) || 0;
+
+            console.log(walletBalance);
+            console.log(withdrawalAmount)
+
+            // Check if the balance is sufficient
+            if (walletBalance < withdrawalAmount) {
+                return res.status(400).json({ error: 'Insufficient balance.' });
+            }
+
+            // Deduct the amount from the user's wallet balance
+            user.walletBalance = walletBalance - withdrawalAmount;
+
+            // Update total withdrawals for the user
+            user.totalWithdrawals = (parseFloat(user.totalWithdrawals) || 0) + withdrawalAmount;
+            await user.save();
+        }
+
+        // Update withdrawal status and amount
+        withdrawal.status = status || 'approved';  // Default to approved if not provided
+        withdrawal.amount = amount || withdrawal.amount;  // Allow updating amount
+        await withdrawal.save();
+
+        res.json({ message: 'Withdrawal updated successfully.', data: withdrawal });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
+// Get all admins with pagination
+async function getAdmins(req, res) {
+    try {
+        const { page = 1, limit = 5 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const admins = await Admin.find()
+            .skip(skip)
+            .limit(parseInt(limit))
+            .select('-password') // Exclude password for security
+            .sort({ createdAt: -1 });
+
+        const totalCount = await Admin.countDocuments();
+
+        res.json({ data: admins, totalCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+// Approve an admin (only by main admin)
+async function approveAdmin(req, res) {
+    try {
+        const adminId = req.adminId;
+
+        const { email } = req.body; // Both emails passed in the request body
+
+        // Find the user by userId in the Admin collection to check if they are a 'mainAdmin'
+        const mainAdmin = await Admin.findById(adminId);
+
+        // Ensure main admin exists and has the right privileges
+        if (!mainAdmin || mainAdmin.role !== 'mainAdmin') {
+            return res.status(403).json({ error: 'Only the main admin can approve other admins.' });
+        }
+
+        // Find the unapproved admin by email
+        const unapprovedAdmin = await UnapprovedAdmin.findOne({ email });
+        if (!unapprovedAdmin) {
+            return res.status(404).json({ error: 'Admin not found in unapproved list.' });
+        }
+
+        // Hash the password before saving to the main Admin schema
+        const hashedPassword = await bcrypt.hash(unapprovedAdmin.password, 10);
+
+        // Create a new admin in the main Admin schema
+        const admin = new Admin({
+            username: unapprovedAdmin.username,
+            email: unapprovedAdmin.email,
+            password: hashedPassword,
+            role: 'admin', // Default to 'admin' unless specified otherwise
+            status: 'approved'
+        });
+
+        // Save the admin to the main Admin schema
+        await admin.save();
+
+        // Delete the admin from UnapprovedAdmin after approval
+        await UnapprovedAdmin.findOneAndDelete({ email });
+
+        res.json({ message: `${admin.email} has been approved.`, data: admin });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+// Reject an admin (only by main admin)
+async function rejectAdmin(req, res) {
+    try {
+        const adminId = req.adminId;
+        const { email, mainAdminEmail } = req.body; // Both emails passed in the request body
+
+        // Ensure main admin exists and has the right privileges
+        const mainAdmin = await Admin.findById(adminId);
+
+        // Ensure main admin exists and has the right privileges
+        if (!mainAdmin || mainAdmin.role !== 'mainAdmin') {
+            return res.status(403).json({ error: 'Only the main admin can reject other admins.' });
+        }
+
+        // Find and delete the admin from the UnapprovedAdmin schema
+        const unapprovedAdmin = await UnapprovedAdmin.findOneAndDelete({ email });
+
+        res.json({ message: `${unapprovedAdmin.email} has been rejected and removed from the unapproved admin list.` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+// Get total balance of a user
+const getTotalBalance = async (req, res) => {
+    const { email } = req.params;
+    
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+        
+        res.json({
+            message: 'Total balance retrieved successfully',
+            totalBalance: user.walletBalance // Return the wallet balance
+        });
+    } catch (error) {
+        console.error('Error retrieving user total balance:', error);
+        res.status(500).json({ message: 'Failed to retrieve total balance' });
+    }
+};
+
+// Get total deposit balance of a user
+const getTotalDepositBalance = async (req, res) => {
+    const { email } = req.body;
+    
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        // Calculate total deposit balance by summing all approved deposits for the user
+        const totalDeposit = await Deposit.aggregate([
+            { $match: { userId: mongoose.Types.ObjectId(userId), status: 'approved' } }, // Filter by userId and approved status
+            { $group: { _id: null, totalDeposit: { $sum: '$amount' } } } // Sum the deposit amounts
+        ]);
+        
+        if (totalDeposit.length === 0) {
+            return res.status(404).json({ message: 'No approved deposits found for this user' });
+        }
+        
+        res.json({
+            message: 'Total deposit balance retrieved successfully',
+            totalDeposit: totalDeposit[0].totalDeposit // Return the sum of approved deposits
+        });
+    } catch (error) {
+        console.error('Error retrieving user total deposit balance:', error);
+        res.status(500).json({ message: 'Failed to retrieve total deposit balance' });
+    }
+};
+
+// Endpoint to get total withdrawals for a user
+const getTotalWithdrawalBalance =  async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Find the user by ID
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+
+        // Send the totalWithdrawn value
+        res.json({ totalWithdrawals: user.totalWithdrawals });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 
 
@@ -375,6 +734,18 @@ module.exports = {
     updateAdminProfile,
     getUserPassPhrase,
     getAllUsersWithWalletDetails,
-    getAdmin
+    getAdmin,
+    forgotPassword,
+    resetPassword,
+    getDeposits,
+    updateDeposit,
+    getWithdrawals,
+    updateWithdrawal,
+    getAdmins,
+    approveAdmin,
+    rejectAdmin,
+    getTotalBalance,
+    getTotalDepositBalance,
+    getTotalWithdrawalBalance
 };
 
