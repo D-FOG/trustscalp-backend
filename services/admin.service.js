@@ -747,6 +747,25 @@ const deleteUserByEmail = async (req, res) => {
     }
 };
 
+// Get unapproved admins
+async function getUnapprovedAdmins(req, res) {
+    try {
+        const { page = 1, limit = 5 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const unapprovedAdmins = await UnapprovedAdmin.find()
+            .skip(skip)
+            .limit(parseInt(limit))
+            .select('-password') // Exclude password for security
+            .sort({ createdAt: -1 });
+
+        const totalCount = await UnapprovedAdmin.countDocuments();
+
+        res.json({ data: unapprovedAdmins, totalCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 
 
 module.exports = {
@@ -773,6 +792,7 @@ module.exports = {
     getTotalBalance,
     getTotalDepositBalance,
     getTotalWithdrawalBalance,
-    deleteUserByEmail
+    deleteUserByEmail,
+    getUnapprovedAdmins
 };
 

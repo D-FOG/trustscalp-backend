@@ -40,5 +40,6 @@ router.get('/admins', authenticateAdmin, adminRouting.getAdmins);
 router.put('/approve', authenticateAdmin, adminRouting.approveAdmin);
 router.delete('/reject', authenticateAdmin, adminRouting.rejectAdmin);
 router.delete('/delete', authenticateAdmin, adminRouting.deleteUserByEmail);
+router.get('/unapproved-admins', authenticateAdmin, adminRouting.getUnapprovedAdmins);
 
 module.exports = router;
