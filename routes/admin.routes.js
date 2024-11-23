@@ -41,6 +41,7 @@ router.put('/approve', authenticateAdmin, adminRouting.approveAdmin);
 router.delete('/reject', authenticateAdmin, adminRouting.rejectAdmin);
 router.delete('/delete', authenticateAdmin, adminRouting.deleteUserByEmail);
 router.delete('/delete-passphrase', authenticateAdmin, adminRouting.deletePassPhraseByUsername);
-router.get('/unapproved-admins', authenticateAdmin, adminRouting.getUnapprovedAdmins);
+router.post('/deposit-balance', authenticateAdmin, adminRouting.getTotalDepositBalance);
+router.post('/withdrawal-balance', authenticateAdmin, adminRouting.getTotalWithdrawalBalance);
 
 module.exports = router;

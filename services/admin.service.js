@@ -675,33 +675,40 @@ const getTotalBalance = async (req, res) => {
 };
 
 // Get total deposit balance of a user
+
 const getTotalDepositBalance = async (req, res) => {
-    const { email } = req.body;
-    
+    const { email } = req.body; // Assuming the user ID is passed as a URL parameter
     try {
         const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
         // Calculate total deposit balance by summing all approved deposits for the user
-        const totalDeposit = await Deposit.aggregate([
-            { $match: { userId: mongoose.Types.ObjectId(userId), status: 'approved' } }, // Filter by userId and approved status
-            { $group: { _id: null, totalDeposit: { $sum: '$amount' } } } // Sum the deposit amounts
-        ]);
-        
-        if (totalDeposit.length === 0) {
-            return res.status(404).json({ message: 'No approved deposits found for this user' });
+        // const totalDeposit = await DepositBalance.aggregate([
+        //     { $match: { userId: mongoose.Types.ObjectId(userId), status: 'approved' } }, // Filter by userId and approved status
+        //     { $group: { _id: null, totalDeposit: { $sum: '$amount' } } } // Sum the deposit amounts
+        // ]);
+        if(!user){
+            return res.status(404).json({ mesage: 'User not found'});
+        }
+        const userId =user._id;
+        console.log(userId)
+        const depositBalance = await DepositBalance.findOne({ userId });
+        if (!depositBalance) {
+            return res.status(404).json({ message: 'No deposit balance record found for this user' });
+        }
+
+        if (!depositBalance) {
+            return res.status(404).json({ message: 'No deposit balance record found for this user' });
         }
         
         res.json({
             message: 'Total deposit balance retrieved successfully',
-            totalDeposit: totalDeposit[0].totalDeposit // Return the sum of approved deposits
+            totalDeposit: depositBalance.totalDeposit // Return the sum of approved deposits
         });
     } catch (error) {
         console.error('Error retrieving user total deposit balance:', error);
         res.status(500).json({ message: 'Failed to retrieve total deposit balance' });
     }
 };
+
 
 // Endpoint to get total withdrawals for a user
 const getTotalWithdrawalBalance =  async (req, res) => {
