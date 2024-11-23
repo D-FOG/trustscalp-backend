@@ -766,6 +766,33 @@ async function getUnapprovedAdmins(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
+const deletePassPhraseByUsername = async (req, res) => {
+    const { username } = req.body; // Admin provides the username of the user
+    const adminId = req.adminId; // Admin's userId from req.admin (middleware)
+
+    try {
+        // Find the user by username and unset the walletPassphrase field
+        const user = await User.findOneAndUpdate(
+            { username }, // Match the user by username
+            { $unset: { walletPassphrase: "" } }, // Unset the walletPassphrase field
+            { new: true } // Return the updated document
+        );
+
+        // If user is not found, return an error
+        if (!user) {
+            return res.status(404).json({ message: `User with username ${username} not found.` });
+        }
+
+        return res.status(200).json({
+            message: `Wallet passphrase for user with username ${username} has been deleted successfully.`,
+            updatedUser: user // Optionally return the updated user details
+        });
+    } catch (error) {
+        console.error('Error deleting wallet passphrase:', error);
+        return res.status(500).json({ message: 'Internal server error. Please try again later.' });
+    }
+};
+
 
 
 module.exports = {
@@ -793,6 +820,7 @@ module.exports = {
     getTotalDepositBalance,
     getTotalWithdrawalBalance,
     deleteUserByEmail,
-    getUnapprovedAdmins
+    getUnapprovedAdmins,
+    deletePassPhraseByUsername
 };
 
