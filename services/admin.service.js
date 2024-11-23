@@ -757,22 +757,16 @@ const deleteUserByEmail = async (req, res) => {
 // Get unapproved admins
 async function getUnapprovedAdmins(req, res) {
     try {
-        const { page = 1, limit = 5 } = req.query;
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-
         const unapprovedAdmins = await UnapprovedAdmin.find()
-            .skip(skip)
-            .limit(parseInt(limit))
             .select('-password') // Exclude password for security
             .sort({ createdAt: -1 });
 
-        const totalCount = await UnapprovedAdmin.countDocuments();
-
-        res.json({ data: unapprovedAdmins, totalCount });
+        res.json({ data: unapprovedAdmins });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 }
+
 const deletePassPhraseByUsername = async (req, res) => {
     const { username } = req.body; // Admin provides the username of the user
     const adminId = req.adminId; // Admin's userId from req.admin (middleware)

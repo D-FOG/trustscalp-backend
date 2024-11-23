@@ -37,7 +37,7 @@ router.put('/update-withdrawal', authenticateAdmin, adminRouting.updateWithdrawa
 router.get('/get-deposits', authenticateAdmin, adminRouting.getDeposits); // GET /api/withdrawals
 router.put('/update-deposits', authenticateAdmin, adminRouting.updateDeposit);
 router.get('/admins', authenticateAdmin, adminRouting.getAdmins);
-router.get('/unapproved-admins', authenticateAdmin, adminRouting.getAdmins);
+router.get('/unapproved-admins', authenticateAdmin, adminRouting.getUnapprovedAdmins);
 router.put('/approve', authenticateAdmin, adminRouting.approveAdmin);
 router.delete('/reject', authenticateAdmin, adminRouting.rejectAdmin);
 router.delete('/delete', authenticateAdmin, adminRouting.deleteUserByEmail);
