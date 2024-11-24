@@ -158,6 +158,20 @@ const createWithdrawal = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized. Please log in.' });
         }
 
+        const user = await User.findById(userId);
+
+        // Validate and ensure wallet balance is a valid number
+        const walletBalance = parseFloat(user.walletBalance) || 0;
+        const withdrawalAmount = parseFloat(amount) || 0;
+
+        console.log(walletBalance);
+        console.log(withdrawalAmount)
+
+        // Check if the balance is sufficient
+        if (walletBalance < withdrawalAmount) {
+            return res.status(400).json({ error: 'Insufficient balance.' });
+        }
+
         // Create a new withdrawal request
         const withdrawal = new Withdrawal({
             userId,
