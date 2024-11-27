@@ -305,7 +305,9 @@ const getUsersWithPassphrase = async (req, res) => {
 
 // Configure nodemailer for email service
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'mail.openjavascript.info',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL, // Replace with your email
     pass: process.env.EMAIL_PASSWORD, // Replace with your email password
