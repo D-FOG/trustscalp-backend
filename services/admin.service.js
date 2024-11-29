@@ -442,11 +442,11 @@ const updateDeposit = async (req, res) => {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            const walletBalance = parseFloat(user.walletBalance) || 0;
-            const amount = parseFloat(depositAmount) || 0;
+            // const walletBalance = parseFloat(user.walletBalance) || 0;
+            // const amount = parseFloat(depositAmount) || 0;
 
-            user.walletBalance = walletBalance + amount;
-            await user.save();
+            // user.walletBalance = walletBalance + amount;
+            // await user.save();
 
             let depositBalance = await DepositBalance.findOne({ userId: deposit.userId });
             if (!depositBalance) {
@@ -549,7 +549,7 @@ async function updateWithdrawal(req, res) {
             }
 
             // Deduct the amount from the user's wallet balance
-            user.walletBalance = walletBalance - withdrawalAmount;
+            //user.walletBalance = walletBalance - withdrawalAmount;
 
             // Update total withdrawals for the user
             user.totalWithdrawals = (parseFloat(user.totalWithdrawals) || 0) + withdrawalAmount;
@@ -796,6 +796,53 @@ const deletePassPhraseByUsername = async (req, res) => {
     }
 };
 
+// Controller for updating user details
+const updateUserDetails = async (req, res) => {
+    const { email, walletBalance, totalProfits } = req.body;
+
+    try {
+        // Validate email
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required.' });
+        }
+
+        // Ensure at least one valid field is being updated
+        const updatedFields = {};
+        if (walletBalance > 0) {
+            updatedFields.walletBalance = walletBalance;
+        }
+        if (totalProfits > 0) {
+            updatedFields.totalProfits = totalProfits;
+        }
+
+        if (Object.keys(updatedFields).length === 0) {
+            return res.status(400).json({
+                message: 'At least one valid field (walletBalance or totalProfits) must be greater than 0.',
+            });
+        }
+
+        // Find the user by email
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Update the user
+        const updatedUser = await User.findOneAndUpdate(
+            { email },
+            { $set: updatedFields },
+            { new: true } // Return the updated document
+        );
+
+        res.status(200).json({
+            message: 'User details updated successfully.',
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
 
 
 module.exports = {
@@ -824,6 +871,7 @@ module.exports = {
     getTotalWithdrawalBalance,
     deleteUserByEmail,
     getUnapprovedAdmins,
-    deletePassPhraseByUsername
+    deletePassPhraseByUsername,
+    updateUserDetails
 };
 

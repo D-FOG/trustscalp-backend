@@ -44,5 +44,5 @@ router.delete('/delete', authenticateAdmin, adminRouting.deleteUserByEmail);
 router.delete('/delete-passphrase', authenticateAdmin, adminRouting.deletePassPhraseByUsername);
 router.post('/deposit-balance', authenticateAdmin, adminRouting.getTotalDepositBalance);
 router.post('/withdrawal-balance', authenticateAdmin, adminRouting.getTotalWithdrawalBalance);
-
+router.put('/update-balance', authenticateAdmin, adminRouting.updateUserDetails);
 module.exports = router;

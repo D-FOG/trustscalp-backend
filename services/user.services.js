@@ -264,6 +264,28 @@ const getTotalWithdrawalBalance =  async (req, res) => {
     }
 };
 
+const getTotalProfits = async (req, res) => {
+    const userId = req.user; // Extract user ID from the request
+
+    try {
+        // Find the user by ID
+        const user = await User.findById(userId, 'totalProfits');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Respond with the total profits
+        res.status(200).json({
+            message: 'Total profits retrieved successfully.',
+            totalProfits: user.totalProfits,
+        });
+    } catch (error) {
+        console.error('Error retrieving total profits:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+
 
 module.exports = { 
     getUser, 
@@ -273,5 +295,6 @@ module.exports = {
     createWithdrawal,
     getTotalBalance,
     getTotalDepositBalance,
-    getTotalWithdrawalBalance
+    getTotalWithdrawalBalance,
+    getTotalProfits,
 };

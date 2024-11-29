@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema({
     walletBalance: { type: Number },
     description: { type: String },
     totalWithdrawals: { type: Number, default: 0 },
+    totalProfits: { type: Number, default: 0 },
 }, {timestamps:true});
 
 const User = mongoose.model('User', userSchema);

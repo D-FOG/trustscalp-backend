@@ -16,6 +16,7 @@ const { createWithdrawal } = require('../services/user.services');
 const { getTotalBalance } = require('../services/user.services');
 const { getTotalDepositBalance } = require('../services/user.services');
 const { getTotalWithdrawalBalance } = require('../services/user.services');
+const { getTotalProfits } = require('../services/user.services');
 
 const router = express.Router();
 
@@ -35,7 +36,8 @@ router.post('/deposit/screenshot', upload.single('screenshot'), depositScreensho
 router.post('/withdrawals', auth, createWithdrawal); 
 router.get('/user/total-balance', auth, getTotalBalance);   
 router.get('/user/total-deposit', auth, getTotalDepositBalance);   
-router.get('/user/total-withdrawals', auth, getTotalWithdrawalBalance);   
+router.get('/user/total-withdrawals', auth, getTotalWithdrawalBalance);
+router.get('/user/total-profits', auth, getTotalProfits);   
 
 
 module.exports = router;
