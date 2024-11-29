@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.models');
 
 const signup = async (req, res) => {
-    const { firstname, lastname, email, password, country, username, phonenumber, countryCode } = req.body;
+    const { firstname, lastname, email, password, country, username, phonenumber } = req.body;
 
     try {
         console.log(req.body);
@@ -34,7 +34,6 @@ const signup = async (req, res) => {
             country,
             username,
             phonenumber,
-            countryCode
         });
 
         await user.save();
