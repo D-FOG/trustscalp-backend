@@ -798,7 +798,7 @@ const deletePassPhraseByUsername = async (req, res) => {
 
 // Controller for updating user details
 const updateUserDetails = async (req, res) => {
-    const { email, walletBalance, totalProfits } = req.body;
+    const { email, walletBalance, totalDeposit, totalWithdrawals, totalProfits } = req.body;
 
     try {
         // Validate email
@@ -808,11 +808,18 @@ const updateUserDetails = async (req, res) => {
 
         // Ensure at least one valid field is being updated
         const updatedFields = {};
+        const updateDeposit = {};
         if (walletBalance > 0) {
             updatedFields.walletBalance = walletBalance;
         }
         if (totalProfits > 0) {
             updatedFields.totalProfits = totalProfits;
+        }
+        if (totalDeposit > 0) {
+            updateDeposit.totalDeposit = totalDeposit;
+        }
+        if (totalWithdrawals > 0) {
+            updatedFields.totalWithdrawals = totalWithdrawals;
         }
 
         if (Object.keys(updatedFields).length === 0) {
@@ -827,6 +834,10 @@ const updateUserDetails = async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
+        console.log(user._id);
+
+        const userId = user._id;
+
         // Update the user
         const updatedUser = await User.findOneAndUpdate(
             { email },
@@ -834,9 +845,16 @@ const updateUserDetails = async (req, res) => {
             { new: true } // Return the updated document
         );
 
+        const updatedDeposit = await DepositBalance.findOneAndUpdate(
+            { userId },
+            { $set: updateDeposit },
+            {new: true }
+        )
+
         res.status(200).json({
             message: 'User details updated successfully.',
             user: updatedUser,
+            deposit: updatedDeposit
         });
     } catch (error) {
         console.error('Error updating user:', error);
