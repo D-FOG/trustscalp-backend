@@ -68,9 +68,10 @@ const deposit = async (req, res) => {
             bitcoin: "bc1qwwyluwae55j5dqhgvark5n3xdcfkaza45dkxqk",
             ethereum: "0xa87450dE283845CB4531D1397fc85dA38627d370",
             solana: "kMpji5T8ProZYwYivEjVzZjyWnKLpkLzrEMLbrs9tCg",
-            "polygon matic": "0xa87450dE283845CB4531D1397fc85dA38627d370",
+            "polygon (matic)": "0xa87450dE283845CB4531D1397fc85dA38627d370",
             sui: "0xeb48341d43d5210079b6ff8145cedbc1aabba9f4d3f422965509009477f16fe8",
-            "usdt tron": "TKgPG7F9rk18Fhp9eDXLZHWd8D5PezJYHB"
+            "usdt": "TKgPG7F9rk18Fhp9eDXLZHWd8D5PezJYHB",
+            dogecoin: "DAmXUWseGdTBKzAyaReznU5GzNVjLozZ87",
         };
 
         const currencyLowerCase = paymentMethod.name.toLowerCase();
