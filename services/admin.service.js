@@ -822,7 +822,7 @@ const updateUserDetails = async (req, res) => {
             updatedFields.totalWithdrawals = totalWithdrawals;
         }
 
-        if (Object.keys(updatedFields).length === 0) {
+        if (Object.keys(updatedFields).length === 0 && Object.keys(updateDeposit).length === 0) {
             return res.status(400).json({
                 message: 'At least one valid field (walletBalance or totalProfits) must be greater than 0.',
             });
