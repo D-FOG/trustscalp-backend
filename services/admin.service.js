@@ -421,49 +421,19 @@ const getDeposits = async (req, res) => {
 // };
 
 const updateDeposit = async (req, res) => {
-    const { depositAmount, status, depositCode } = req.body;
+    const { depositCode } = req.body;
 
     try {
-        const deposit = await Deposit.findOne({ depositCode });
-        if (!deposit) {
+       //Delete deposit
+       const deleteDeposit =  await Deposit.findOneAndDelete({ depositCode });
+       
+       //Check if not deleted
+       if (!deleteDeposit) {
             return res.status(404).json({ message: 'Deposit not found' });
         }
 
-        // If the status is updated to 'approved', update the user's wallet balance
-        if (status === 'approved' && deposit.status !== 'approved') {
-            // Update the deposit status
-            deposit.status = status;
-            deposit.updatedAt = Date.now();
-            await deposit.save();
-
-            // Update the user's wallet balance
-            const user = await User.findById(deposit.userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            // const walletBalance = parseFloat(user.walletBalance) || 0;
-            // const amount = parseFloat(depositAmount) || 0;
-
-            // user.walletBalance = walletBalance + amount;
-            // await user.save();
-
-            let depositBalance = await DepositBalance.findOne({ userId: deposit.userId });
-            if (!depositBalance) {
-                // If no record exists, create a new one
-                depositBalance = new DepositBalance({
-                    userId: deposit.userId,
-                    totalDeposit: 0,
-                });
-            }
-
-            // Increment the totalDeposit field
-            depositBalance.totalDeposit += Number(depositAmount);
-                await depositBalance.save();
-            }
-
         // Respond with updated deposit information
-        res.json({ message: 'Deposit updated successfully', deposit });
+        res.json({ message: 'Deposit request deleted successfully', deleteDeposit });
     } catch (error) {
         console.error('Error updating deposit:', error);
         res.status(500).json({ message: 'Failed to update deposit' });
@@ -516,52 +486,14 @@ async function getWithdrawals(req, res) {
 
 async function updateWithdrawal(req, res) {
     try {
-        const { withdrawalCode, amount, status } = req.body;
-
-        // Find the withdrawal by code or ID
-        const withdrawal = await Withdrawal.findOne({ withdrawalCode });
-        if (!withdrawal) {
-            return res.status(404).json({ error: 'Withdrawal not found.' });
+        const { withdrawalCode } = req.body;
+        const deleteWithdrawal = await Withdrawal.findOneAndDelete({ withdrawalCode });
+        
+        //check if deleted
+        if(!deleteWithdrawal){
+            res.status(404).json({ message: 'Withdrawal not found' });
         }
-
-        // Check if the withdrawal is pending before updating
-        if (withdrawal.status !== 'pending') {
-            return res.status(400).json({ error: 'Withdrawal has already been processed.' });
-        }
-
-        // Update the user wallet balance after withdrawal is approved
-        if (withdrawal.status !== 'approved' && withdrawal.status !== 'rejected') {
-            const user = await User.findById(withdrawal.userId);
-            if (!user) {
-                return res.status(404).json({ error: 'User not found.' });
-            }
-
-            // Validate and ensure wallet balance is a valid number
-            const walletBalance = parseFloat(user.walletBalance) || 0;
-            const withdrawalAmount = parseFloat(amount) || 0;
-
-            console.log(walletBalance);
-            console.log(withdrawalAmount)
-
-            // Check if the balance is sufficient
-            if (walletBalance < withdrawalAmount) {
-                return res.status(400).json({ error: 'Insufficient balance.' });
-            }
-
-            // Deduct the amount from the user's wallet balance
-            //user.walletBalance = walletBalance - withdrawalAmount;
-
-            // Update total withdrawals for the user
-            user.totalWithdrawals = (parseFloat(user.totalWithdrawals) || 0) + withdrawalAmount;
-            await user.save();
-        }
-
-        // Update withdrawal status and amount
-        withdrawal.status = status || 'approved';  // Default to approved if not provided
-        withdrawal.amount = amount || withdrawal.amount;  // Allow updating amount
-        await withdrawal.save();
-
-        res.json({ message: 'Withdrawal updated successfully.', data: withdrawal });
+        res.json({ message: 'Withdrawal request deleted successfully.', data: deleteWithdrawal });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
@@ -848,8 +780,10 @@ const updateUserDetails = async (req, res) => {
         const updatedDeposit = await DepositBalance.findOneAndUpdate(
             { userId },
             { $set: updateDeposit },
-            {new: true }
+            {new: true, upsert: true }
         )
+
+        console.log(`deposit update`,updatedDeposit)
 
         res.status(200).json({
             message: 'User details updated successfully.',

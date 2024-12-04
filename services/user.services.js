@@ -165,12 +165,9 @@ const createWithdrawal = async (req, res) => {
         const walletBalance = parseFloat(user.walletBalance) || 0;
         const withdrawalAmount = parseFloat(amount) || 0;
 
-        console.log(walletBalance);
-        console.log(withdrawalAmount)
-
         // Check if the balance is sufficient
         if (walletBalance < withdrawalAmount) {
-            return res.status(400).json({ error: 'Insufficient balance.' });
+            return res.status(400).json({ message: 'Insufficient balance.' });
         }
 
         // Create a new withdrawal request
